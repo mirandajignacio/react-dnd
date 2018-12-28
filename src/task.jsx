@@ -7,7 +7,7 @@ const Container = styled.div`
     border-radius: 2px
     padding: 8px;
     margin-bottom: 8px;
-    background-color: ${props => (props.isDragging ? 'white' : 'white')};
+    background-color: ${props => props.isDragDisabled ? 'lightgrey' : props.isDragging ? 'white' : 'white'};
     box-shadow: ${props => (props.isDragging ? '0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23)' : 'none')};
     transition: box-shadow 0.2s ease;
     display: flex;
@@ -21,14 +21,21 @@ const Handle = styled.div`
 `;
 export default class Task extends React.Component {
   render() {
+    let isDragDisabled = this.props.task.id === '!task-1'
     return (
-      <Draggable draggableId={this.props.task.id} index={this.props.index}>
+      <Draggable
+        draggableId={this.props.task.id}
+        index={this.props.index}
+        isDragDisabled={isDragDisabled}
+      >
         {(provided, snapshot) => (
           <Container
             {...provided.draggableProps}
             {...provided.dragHandleProps}
             ref={provided.innerRef}
             isDragging={snapshot.isDragging}
+            isDragDisabled={isDragDisabled}
+            aria-roledescription="Press space bar to lift the task"
           >
             {/* <Handle {...provided.dragHandleProps} /> */}
             {this.props.task.content}

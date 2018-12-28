@@ -3,25 +3,61 @@ import ReactDOM from 'react-dom';
 import initialData from './initial-data'
 import Column from "./column";
 import '@atlaskit/css-reset'
-import { DragDropContext } from 'react-beautiful-dnd'
+import { DragDropContext, Droppable } from 'react-beautiful-dnd'
 import styled from 'styled-components'
 
 const Container = styled.div`
   display:flex;
 `
+class InnerList extends React.PureComponent {
+  // shouldComponentUpdate(nextProps) {
+  //   if(nextProps.column === this.props.column && nextProps.taskMap === this.props.taskMap && nextProps.index === this.props.index) {
+  //     return false;
+  //   }
+  //   return true;
+  // }
+
+  render() {
+    const { column, taskMap, index } = this.props;
+    const tasks = column.taskIds.map(taskId => taskMap[taskId])
+    return <Column column={column} tasks={tasks} index={index} />
+  }
+}
 
 class App extends React.Component {
   state = initialData
-  onDragStart = result => {
-    console.log(result)
+
+  onDragStart = (start, provided) => {
+    provided.announce(
+      `You have lifted the task in position ${start.source.index + 1}`,
+    );
+    const homeIndex = this.state.columnOrder.indexOf(start.source.droppableId)
+    this.setState({
+      homeIndex
+    })
   }
 
-  onDragUpdate = result => {
-    console.log(result)
+  onDragUpdate = (result, provided) => {
+    const message = update.destination
+      ? `You have moved the task to position ${update.destination.index + 1}`
+      : `You are currently not over a droppable area`;
+
+    provided.announce(message);
   }
 
   onDragEnd = result => {
-    const { destination, source, draggableId } = result;
+    const message = result.destination
+      ? `You have moved the task from position
+        ${result.source.index + 1} to ${result.destination.index + 1}`
+      : `The task has been returned to its starting position of
+        ${result.source.index + 1}`;
+
+    provided.announce(message);
+    this.setState({
+      homeIndex: null
+    })
+
+    const { destination, source, draggableId, type } = result;
     if (!destination) {
       return;
     }
@@ -31,6 +67,21 @@ class App extends React.Component {
     ) {
       return;
     }
+
+    if (type === 'column') {
+      const newColumnOrder = Array.from(this.state.columnOrder);
+      newColumnOrder.splice(source.index, 1);
+      newColumnOrder.splice(destination.index, 0, draggableId);
+
+      const newState = {
+        ...this.state,
+        columnOrder: newColumnOrder
+      }
+
+      this.setState(newState)
+      return;
+    }
+
     const columnStart = this.state.columns[source.droppableId];
     const columnFinish = this.state.columns[destination.droppableId];
 
@@ -51,7 +102,7 @@ class App extends React.Component {
       }
       this.setState(newState)
       return
-    } 
+    }
     const startTaskIds = Array.from(columnStart.taskIds);
     startTaskIds.splice(source.index, 1);
     const newColumnStart = {
@@ -84,13 +135,32 @@ class App extends React.Component {
         onDragUpdate={this.onDragUpdate}
         onDragEnd={this.onDragEnd}
       >
-        <Container>
-          {this.state.columnOrder.map(columnId => {
-            const column = this.state.columns[columnId];
-            const tasks = column.taskIds.map(taskId => this.state.tasks[taskId])
-            return <Column key={column.id} column={column} tasks={tasks} />
-          })}
-        </Container>
+        <Droppable droppableId="all-columns" direction="horizontal" type="column">
+          {(provided) => (
+            <Container
+              {...provided.droppableProps}
+              ref={provided.innerRef}
+            >
+              {this.state.columnOrder.map((columnId, index) => {
+                // const isDropDisabled = index < this.state.homeIndex;
+                const column = this.state.columns[columnId];
+                // const tasks = column.taskIds.map(
+                //   taskId => this.state.tasks[taskId]
+                // )
+                return (
+                  <InnerList
+                    key={column.id}
+                    index={index}
+                    column={column}
+                    taskMap={this.state.tasks}
+                  // isDropDisabled={isDropDisabled} 
+                  />
+                )
+              })}
+              {provided.placeholder}
+            </Container>)}
+
+        </Droppable>
       </DragDropContext>
     )
   }
