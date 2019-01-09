@@ -37,7 +37,7 @@ class App extends React.Component {
     })
   }
 
-  onDragUpdate = (result, provided) => {
+  onDragUpdate = (update, provided) => {
     const message = update.destination
       ? `You have moved the task to position ${update.destination.index + 1}`
       : `You are currently not over a droppable area`;
@@ -45,7 +45,7 @@ class App extends React.Component {
     provided.announce(message);
   }
 
-  onDragEnd = result => {
+  onDragEnd = (result, provided) => {
     const message = result.destination
       ? `You have moved the task from position
         ${result.source.index + 1} to ${result.destination.index + 1}`
